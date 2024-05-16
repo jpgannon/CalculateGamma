@@ -1,0 +1,65 @@
+---
+title: "CalculateGamma"
+format: html
+editor: visual
+---
+
+
+
+```{r}
+library(whitebox)
+library(terra)
+library(tidyverse)
+
+whitebox::wbt_init()
+```
+
+Read data
+
+```{r}
+#DEM <- rast("2007_3m_Digital_Elevation_Model_RCEW_RShrestha/rcew_DEM_3m_filled.tif")
+#plot(DEM)
+sensors <- read_csv("SensorID_contributing_areacsv.csv")
+```
+```{r}
+#Calculate Beta
+#Slope of channel (points on channel)
+#Curvature - laplace curvature
+wbt_total_curvature(
+  dem = "2007_3m_Digital_Elevation_Model_RCEW_RShrestha/rcew_DEM_3m_filled.tif", 
+  output = "2007_3m_Digital_Elevation_Model_RCEW_RShrestha/curvature.tif")
+
+wbt_slope(
+  dem = "2007_3m_Digital_Elevation_Model_RCEW_RShrestha/rcew_DEM_3m_filled.tif", 
+  output = "2007_3m_Digital_Elevation_Model_RCEW_RShrestha/slope.tif")
+
+wbt_d_inf_flow_accumulation(input = "2007_3m_Digital_Elevation_Model_RCEW_RShrestha/rcew_DEM_3m_filled.tif", 
+  output = "2007_3m_Digital_Elevation_Model_RCEW_RShrestha/dinf_flow_acc.tif",
+  out_type = "ca")
+
+```
+
+Extract lnA and curvature along stream network
+```{r}
+sensors |>
+  ggplot(aes(x = TWm_m_ln2, y = `Curvature_km-1`))+
+  geom_point()
+
+summary(lm(`Curvature_km-1`~TWm_m_ln2, data = sensors))
+
+#slope = 1.08
+```
+
+
+```{r}
+alpha = 0.5
+theta = 0.5
+k1 = 1.6
+k2 = -0.51
+delta = 1.08
+#delta is the slope of lnA of the stream network (x) and Curvature (y)
+
+beta = alpha / ((k1*delta) + k2 + theta + 1)
+```
+
+
